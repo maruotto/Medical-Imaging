@@ -2,9 +2,9 @@ import torch
 import torch.nn as nn
 from training.loss import DiceBCELoss
 
-class MultiTaskloss(nn.Module):
+class MultiTaskLoss(nn.Module):
     def __init__(self):
-        super(MultiTaskloss, self).__init()
+        super(MultiTaskLoss, self).__init__()
 
     def forward(self, preds, mask, label, intensity):
         crossEntropy = nn.CrossEntropyLoss()

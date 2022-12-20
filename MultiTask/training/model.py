@@ -2,7 +2,41 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+class BasicBlock(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super().__init__()
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
+        self.batch_norm1 = nn.BatchNorm2d(out_channels)
+        self.relu = nn.ReLU(inplace=True)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
+        self.batch_norm2 = nn.BatchNorm2d(out_channels)
+        self.relu2 = nn.ReLU(inplace=True)
+        self.downsample = nn.Sequential (
+            nn.Conv2d(in_channels, out_channels, kernel_size=1),
+            nn.BatchNorm2d(out_channels)
+        )
 
+
+    def forward(self, i):
+    
+        identity = i
+
+        out = self.conv1(identity)
+        out = self.batch_norm1(out)
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.batch_norm2(out)
+
+        #Reason for downsample: the convolutional layer outputs a tensor with shape (4, 128, 192, 192) [FIRST CASE] with 128 being the output channels sent as input. 
+        #[FIRST CASE] the input has shape (4, 64, 192, 192), so to match the two to perform the skip connection it is necessary to reshape the output of the previous layers as to match the input
+        identity = self.downsample(identity)
+
+        out += identity
+        out = self.relu2(out)
+
+        return out
+        
 class DoubleConv(nn.Module):
     """(convolution => [BN] => ReLU) * 2"""
 
@@ -22,6 +56,9 @@ class DoubleConv(nn.Module):
     def forward(self, x):
         return self.double_conv(x)
 
+    def get_last_shared_layer(self):
+        return self.double_conv[len(self.double_conv)-1]
+
 
 class Down(nn.Module):
     """Downscaling with maxpool then double conv"""
@@ -30,11 +67,15 @@ class Down(nn.Module):
         super().__init__()
         self.maxpool_conv = nn.Sequential(
             nn.MaxPool2d(2),
-            DoubleConv(in_channels, out_channels)
+            #DoubleConv(in_channels, out_channels)
+            BasicBlock(in_channels, out_channels)
         )
 
     def forward(self, x):
         return self.maxpool_conv(x)
+
+    def get_last_shared_layer(self):
+        return self.maxpool_conv[len(self.maxpool_conv)-1].get_last_shared_layer()
 
 
 class Up(nn.Module):
@@ -90,10 +131,10 @@ class UNet(nn.Module):
         self.up4 = Up(128, 64, bilinear)
         self.outc = OutConv(64, n_classes)
         
-        self.ann1_1 = nn.Linear(100352,64)
-        self.ann1_2 = nn.Linear(64,64)
-        self.ann2_1 = nn.Linear(100352,64)
-        self.ann2_2 = nn.Linear(64,64)
+        self.ann1_1 = nn.Linear(294912, 64)
+        self.ann1_2 = nn.Linear(64,7)
+        self.ann2_1 = nn.Linear(294912,64)
+        self.ann2_2 = nn.Linear(64,1)
         
         self.weights = torch.nn.Parameter(torch.ones(3).float())
 
