@@ -119,7 +119,7 @@ class UNet(nn.Module):
         self.n_classes = n_classes
         self.bilinear = bilinear
 
-        self.inc = BasicBlock(n_channels, 64)
+        self.inc = DoubleConv(n_channels, 64)
         self.down1 = Down(64, 128)
         self.down2 = Down(128, 256)
         self.down3 = Down(256, 512)
@@ -135,7 +135,6 @@ class UNet(nn.Module):
         self.ann1_2 = nn.Linear(64,7)
         self.ann2_1 = nn.Linear(294912,64)
         self.ann2_2 = nn.Linear(64,1)
-        self.logsoftmax = nn.LogSoftmax(dim=1)
         
         self.weights = torch.nn.Parameter(torch.ones(3).float())
 
@@ -162,15 +161,13 @@ class UNet(nn.Module):
         a1 = self.ann1_1(a)
         a1 = F.relu(a1)
         a1 = self.ann1_2(a1)
-        soft = self.logsoftmax(a1)
-        lab = soft # label classification output - multi
+        lab = a1 # label classification output - multi
 
         # intensity classification part
         a2 = self.ann2_1(a)
         a2 = F.relu(a2)        
         a2 = self.ann2_2(a2)
-        #sig = F.logsigmoid(a2)
-        intensity = a2# intensity classification ouput - binary
+        intensity = a2 # intensity classification ouput - binary
 
         return [output, lab, intensity]
 

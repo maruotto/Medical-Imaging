@@ -31,9 +31,9 @@ NUM_LEVELS = 3
 
 # initialize learning rate, number of epochs to train for, and the
 # batch size
-INIT_LR = 0.001 #0.0001
-NUM_EPOCHS = 15 #30
-BATCH_SIZE = 8
+INIT_LR = 0.0001
+NUM_EPOCHS = 30
+BATCH_SIZE = 4
 
 # define the input image dimensions
 INPUT_IMAGE_WIDTH = 384
@@ -70,7 +70,7 @@ def get_label_class(label):
 		return 4
 	elif label == 'numem ':
 		return 5
-	elif label ==  'mitsp ':
+	else:  # mistp
 		return 6
 
 def get_intensity_class(intensity):

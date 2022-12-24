@@ -43,7 +43,7 @@ class GradNorm():
 
         # compute the GradNorm loss
         # this term has to remain constant
-        constant_term = (mean_norm * (inverse_train_rate ** 1.2)).clone().detach().requires_grad_(False) #0.06 is the alpha parameter
+        constant_term = (mean_norm * (inverse_train_rate ** 0.06)).clone().detach().requires_grad_(False) #0.06 is the alpha parameter
         constant_term = torch.Tensor(constant_term).to(config.DEVICE)
         # this is the GradNorm loss itself
         Gradloss = nn.L1Loss(reduction='sum')

@@ -8,8 +8,7 @@ class MultiTaskLoss(nn.Module):
 
     def forward(self, preds, mask, label, intensity):
         crossEntropy = nn.CrossEntropyLoss()
-        binaryCrossEntropy = nn.BCEWithLogitsLoss()  #
-
+        binaryCrossEntropy = nn.BCEWithLogitsLoss()
         diceLoss = DiceBCELoss()
         label = label.long()
         intensity = intensity.unsqueeze(1)
