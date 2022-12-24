@@ -32,8 +32,8 @@ NUM_LEVELS = 3
 # initialize learning rate, number of epochs to train for, and the
 # batch size
 INIT_LR = 0.0001
-NUM_EPOCHS = 30
-BATCH_SIZE = 4
+NUM_EPOCHS = 30 
+BATCH_SIZE = 8
 
 # define the input image dimensions
 INPUT_IMAGE_WIDTH = 384
@@ -44,6 +44,9 @@ THRESHOLD = 0.5
 
 # define the path to the base output directory
 BASE_OUTPUT = "output/"
+
+#define alpha parameter of gradnorm
+ALPHA = 0.6
 
 # define the path to the output serialized model, model training
 # plot, and testing image paths
@@ -70,7 +73,7 @@ def get_label_class(label):
 		return 4
 	elif label == 'numem ':
 		return 5
-	else:  # mistp
+	elif label ==  'mitsp ':
 		return 6
 
 def get_intensity_class(intensity):
