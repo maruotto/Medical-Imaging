@@ -32,15 +32,20 @@ import math
 ap = argparse.ArgumentParser()
 ap.add_argument("-l", "--letter", type=str, required=True, help="letter of the fold in capital case")
 ap.add_argument("-o", "--output", type=str, required=False, help="path to output trained model", default="BCE")
+ap.add_argument("-e", "--epochs", type=str, required=False, help="number of epochs to add", default=5)
+ap.add_argument("-m", "--model", type=str, required=False, help="path to input pretrained model", default="BCE15")
+
 args = vars(ap.parse_args())
 
 # load the image and mask filepaths in a sorted manner
 LETTER = args["letter"]
 OUTPUT = args["output"]
+NUM_EPOCHS = int(args["epochs"])
 root_dir = config.IMAGE_DATASET_PATH
+MODEL_PATH = os.path.join(config.BASE_OUTPUT, args["model"]) +  "/model" + LETTER
 csv_file = 'dataset/crossValidationCSVs/fold' + LETTER + '_train.csv'
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = config.DEVICE
 
 # create the train and test datasets
 trainData = MultiTaskDataset(csv_file=csv_file, root_dir=root_dir)
@@ -59,7 +64,7 @@ trainDataLoader = DataLoader(trainData, shuffle=True, batch_size=config.BATCH_SI
 
 # initialize the model
 print(f"[INFO {time.asctime(time.localtime(time.time()))}] initializing the model...")
-model = UNet(config.NUM_CHANNELS, config.NUM_CLASSES).to(device)
+model = unet = torch.load(MODEL_PATH).to(config.DEVICE) #UNet(config.NUM_CHANNELS, config.NUM_CLASSES).to(device)
 
 # initialize our optimizer and loss function
 opt = Adam(model.parameters(), lr=config.INIT_LR)
@@ -90,10 +95,9 @@ gradNorm = GradNorm(model, opt)
 
 pred = None
 # loop over our epochs
-for e in range(0, config.NUM_EPOCHS):
+for e in range(0, NUM_EPOCHS):
 #for e in range(0, 1):
-
-    print('6 as alpha\t0.001 learning rate\t8 batch size\nSTART NEW EPOCH')
+    print('0.06 as alpha\t0.001 learning rate\t8 batch size\nSTART NEW EPOCH')
     i = 0
     metrics ["mask_loss"] =  np.array([]).astype(np.double)
     metrics ["mask_acc"] =  np.array([])
@@ -104,7 +108,7 @@ for e in range(0, config.NUM_EPOCHS):
 
     # loop over the training set
     for x, y_mask, y_label, y_intensity in trainDataLoader:
-        #print("iteration ", i, " of ", len(trainDataLoader))
+        print("iteration ", i, " of ", len(trainDataLoader))
         i += 1
         sys.stdout.flush()
         # send the input to the device
@@ -146,7 +150,7 @@ for e in range(0, config.NUM_EPOCHS):
 
         dice_score_batch = torch.sigmoid(pred[0])
         where = torch.Tensor(torch.where(dice_score_batch> torch.Tensor([config.THRESHOLD]).to(device), 1, 0)).type(torch.uint8)
-        dice_score_batch = f.dice(where.to(config.DEVICE), y_mask.type(torch.uint8)).cpu().item()
+        dice_score_batch = f.dice(where.to(config.DEVICE), y_mask.type(torch.uint8).to(config.DEVICE)).cpu().item()
         metrics["mask_acc"] = np.append(metrics["mask_acc"], dice_score_batch)
         metrics["label_acc"] = np.append(metrics["label_acc"], len(torch.where((pred[1].argmax(1) == y_label).cpu())[0]))
         intensity_pred = torch.sigmoid(pred[2].squeeze())
@@ -181,7 +185,7 @@ for e in range(0, config.NUM_EPOCHS):
 
     # print the model training and validation information
     print(f"[INFO {time.asctime(time.localtime(time.time()))}] ")
-    print("[INFO] EPOCH: {}/{}".format(e + 1, config.NUM_EPOCHS))
+    print("[INFO] EPOCH: {}/{}".format(e + 1, NUM_EPOCHS))
     print("Mask loss: {:.6f}, Mask accuracy: {:.4f}".format(metrics["mask_train_loss"][-1],
                                                             metrics["mask_train_acc"][-1]))
     print("Label loss: {:.6f}, Label accuracy: {:.4f}".format(metrics["label_train_loss"][-1],

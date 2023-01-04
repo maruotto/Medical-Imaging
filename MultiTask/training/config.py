@@ -32,7 +32,7 @@ NUM_LEVELS = 3
 # initialize learning rate, number of epochs to train for, and the
 # batch size
 INIT_LR = 0.0001
-NUM_EPOCHS = 30 
+NUM_EPOCHS = 15#30
 BATCH_SIZE = 8
 
 # define the input image dimensions
@@ -46,7 +46,7 @@ THRESHOLD = 0.5
 BASE_OUTPUT = "output/"
 
 #define alpha parameter of gradnorm
-ALPHA = 0.6
+ALPHA = 6
 
 # define the path to the output serialized model, model training
 # plot, and testing image paths
