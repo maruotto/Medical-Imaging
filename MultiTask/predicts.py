@@ -9,7 +9,6 @@ from training.dataset import MultiTaskDataset
 import torchmetrics.functional as f
 import pandas as pd
 from torch.utils.data import DataLoader
-import cv2
 import argparse
 from sklearn.metrics import confusion_matrix
 
@@ -20,7 +19,6 @@ ap.add_argument("-l", "--letter", type=str, required=True, help="letter of the f
 ap.add_argument("-p", "--path", type=str, required=False, help="path to output trained model", default="dice")
 args = vars(ap.parse_args())
 
-# load the image and mask filepaths in a sorted manner
 LETTER = args["letter"]
 MODEL_PATH = config.BASE_OUTPUT+args['path']+'/model'+LETTER
 
@@ -36,9 +34,7 @@ if __name__ == '__main__':
 	print("[INFO] load up model...")
 	unet = torch.load(MODEL_PATH).to(config.DEVICE)
 
-	i = 0
 	dice_scores = []
-	k = 0
 	y_label = []
 	y_intensity = []
 	preds_label = []
@@ -51,25 +47,15 @@ if __name__ == '__main__':
 			# send the input to the device
 			x = x.to(config.DEVICE)
 			y0 = y0.to(config.DEVICE)
-			# make the predictions and calculate dice score
+			
+			# make the predictions, calculate dice score and evaluate the classification for the label and the intensity
 			preds = unet(x)
 
 			mask = torch.sigmoid(preds[0])
 			predMask = np.where(mask.cpu() > config.THRESHOLD, 1, 0)
-
-			'''
-			if k < 5:
-				cv2.imwrite("mask" + str(k) + ".tiff", predMask.squeeze().astype(np.uint8)*255)
-				k = k+1
-			else:
-				break
-			'''
-
 			y0 = y0.type(torch.uint8)
 			value = f.dice(torch.Tensor(predMask).type(torch.uint8).to(config.DEVICE),y0).item()
-			#print(i, " dice_score:", value)
 			dice_scores += [value, ]
-			i += 1
 
 			y_label += [y1.cpu().item(), ]
 			preds_label += [preds[1].argmax(1).to(config.DEVICE).cpu().item(), ]
