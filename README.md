@@ -11,6 +11,6 @@ The training folder contains utility files for the training phase.
 
 To train execute ```nohup ./train.sh OUPUT_FOLDER >& output/trainLog.log &```.
 
-To predict results execute ```nohup ./predict.sh INPUT_FOLDER >& output/predict.log &```.
+To predict results execute ```nohup ./predicts.sh INPUT_FOLDER >& output/predict.log &```.
 
 OUTPUT_FOLDER and INPUT_FOLDER must be inside 'output' folder, defined in config.py.
