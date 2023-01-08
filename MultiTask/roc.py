@@ -86,7 +86,7 @@ if __name__ == '__main__':
 	fig = plt.figure(1)
 	plt.plot([0, 1], [0, 1], color='darkblue', linestyle=(0, (1, 10)))
 	for dir in next(os.walk(config.BASE_OUTPUT))[1]:
-		if not dir == 'tmp':
+		if not (dir == 'tmp' or dir == 'Confusions'):
 			MODEL_PATH = os.path.join(config.BASE_OUTPUT, dir) + '/model' + LETTER
 			each_model(MODEL_PATH, dir)
 			print('model ' + dir + ' success')
@@ -96,6 +96,6 @@ if __name__ == '__main__':
 	plt.ylabel('True Positive Rate')
 	plt.title('Receiver Operating Characteristic (ROC) Curve')
 
-	fig.savefig(os.path.join(config.BASE_OUTPUT, OUTPUT) + 'roc.pdf')
+	fig.savefig(os.path.join(config.BASE_OUTPUT, OUTPUT) + '/roc'+LETTER+'.pdf')
 
 
