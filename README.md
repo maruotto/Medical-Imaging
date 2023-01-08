@@ -9,6 +9,8 @@ Scripts are organized in the following way:
 
 The training folder contains utility files for the training phase.
 
-To train execute ```nohup ./train.sh OUPUT_FOLDER >& output/trainLog.log &```
-To predict results execute ```nohup ./predict.sh INPUT_FOLDER >& output/predict.log &```
-OUTPUT_FOLDER and INPUT_FOLDER must be inside 'output' folder, defined in config.py
+To train execute ```nohup ./train.sh OUPUT_FOLDER >& output/trainLog.log &```.
+
+To predict results execute ```nohup ./predict.sh INPUT_FOLDER >& output/predict.log &```.
+
+OUTPUT_FOLDER and INPUT_FOLDER must be inside 'output' folder, defined in config.py.
