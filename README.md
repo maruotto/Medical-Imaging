@@ -5,7 +5,7 @@ Networks are too big to be uploaded on GitHub, therefore there is a [link](https
 
 Scripts are organized in the following way:
   - train.py, predict.py, roc.py and matrix.py work on a single fold.
-  - train.sh, predicts.sh, rocs.sh work on all the five folds.
+  - train.sh, predicts.sh, rocs.sh and matrixes.py work on all the five folds.
 
 The training folder contains utility files for the training phase.
 
