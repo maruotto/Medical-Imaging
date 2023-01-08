@@ -1,6 +1,5 @@
 # import the necessary packages
 from torch.utils.data import Dataset
-import cv2
 import pandas as pd
 import torch
 import os
