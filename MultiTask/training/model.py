@@ -67,7 +67,6 @@ class Down(nn.Module):
         super().__init__()
         self.maxpool_conv = nn.Sequential(
             nn.MaxPool2d(2),
-            #DoubleConv(in_channels, out_channels)
             BasicBlock(in_channels, out_channels)
         )
 
