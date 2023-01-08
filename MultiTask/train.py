@@ -1,8 +1,6 @@
 # python3 train.py --model output/model.pth --plot output/plot.png
 # set the matplotlib backend so figures can be saved in the background
 import matplotlib
-import os
-
 matplotlib.use("Agg")
 
 # import the necessary packages
@@ -26,7 +24,6 @@ from training import config
 from training.model import UNet
 import torchmetrics.functional as f
 from training.GradNorm import GradNorm
-import math
 
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
@@ -34,7 +31,6 @@ ap.add_argument("-l", "--letter", type=str, required=True, help="letter of the f
 ap.add_argument("-o", "--output", type=str, required=False, help="path to output trained model", default="BCE")
 args = vars(ap.parse_args())
 
-# load the image and mask filepaths in a sorted manner
 LETTER = args["letter"]
 OUTPUT = args["output"]
 root_dir = config.IMAGE_DATASET_PATH
@@ -42,7 +38,7 @@ csv_file = 'dataset/crossValidationCSVs/fold' + LETTER + '_train.csv'
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# create the train and test datasets
+# create the train dataset
 trainData = MultiTaskDataset(csv_file=csv_file, root_dir=root_dir)
 print(f"[INFO {time.asctime(time.localtime(time.time()))}] found {len(trainData)} examples in the training set...")
 
@@ -51,10 +47,7 @@ torch.manual_seed(12345)
 trainLoader = DataLoader(trainData, shuffle=True, batch_size=config.BATCH_SIZE, pin_memory=config.PIN_MEMORY,
                          num_workers=2)
 
-# calculate steps per epoch for training set
-trainSteps = len(trainData) // config.BATCH_SIZE
-
-# initialize the train, validation, and test data loaders
+# initialize the train data loader
 trainDataLoader = DataLoader(trainData, shuffle=True, batch_size=config.BATCH_SIZE)
 
 # initialize the model
@@ -91,10 +84,6 @@ gradNorm = GradNorm(model, opt)
 pred = None
 # loop over our epochs
 for e in range(0, config.NUM_EPOCHS):
-#for e in range(0, 1):
-
-    print('6 as alpha\t0.001 learning rate\t8 batch size\nSTART NEW EPOCH')
-    i = 0
     metrics ["mask_loss"] =  np.array([]).astype(np.double)
     metrics ["mask_acc"] =  np.array([])
     metrics ["label_loss"] =  np.array([])
@@ -104,8 +93,6 @@ for e in range(0, config.NUM_EPOCHS):
 
     # loop over the training set
     for x, y_mask, y_label, y_intensity in trainDataLoader:
-        #print("iteration ", i, " of ", len(trainDataLoader))
-        i += 1
         sys.stdout.flush()
         # send the input to the device
         x = x.to(device)
@@ -115,10 +102,8 @@ for e in range(0, config.NUM_EPOCHS):
         # perform a forward pass and calculate the training loss
         pred = model(x)  # the model returns a list of three elements - three predictions:  mask, label, intensity
         loss = lossFn(pred, y_mask, y_label, y_intensity)   
-        #loss is a tensor of three elements where each element is the task loss associated to one batch
         
-        # zero out the gradients, perform the backpropagation step,
-        # and update the weights
+        #the GradNorm algorithm performs the backpropagation step and updates the weights
         gradNorm.GradNorm_train(e, loss)
         normalize_coeff = 3 / torch.sum(model.weights.data, dim=0)
         model.weights.data = model.weights.data * normalize_coeff
@@ -128,22 +113,7 @@ for e in range(0, config.NUM_EPOCHS):
         metrics["label_loss"] = np.append(metrics["label_loss"], float(loss[1].cpu()))
         metrics["intensity_loss"] = np.append(metrics["intensity_loss"], float(loss[2].cpu()))
         
-        
-
         # calculate the number of correct predictions
-        '''
-        l = 0
-        dice_score = []
-        for elem in pred[0]:
-            pos_prob = torch.sigmoid(elem)
-            pos_prob = torch.Tensor(torch.where(pos_prob > torch.Tensor([config.THRESHOLD]).to(device), 1, 0)).type(
-                torch.uint8)
-            dice = f.dice(pos_prob.to(config.DEVICE), y_mask[l].type(torch.uint8)).item()
-            dice_score.append(dice)
-            l += 1
-            dice_score_batch = torch.Tensor(dice_score).mean().to(config.DEVICE)
-        '''
-
         dice_score_batch = torch.sigmoid(pred[0])
         where = torch.Tensor(torch.where(dice_score_batch> torch.Tensor([config.THRESHOLD]).to(device), 1, 0)).type(torch.uint8)
         dice_score_batch = f.dice(where.to(config.DEVICE), y_mask.type(torch.uint8)).cpu().item()
@@ -152,34 +122,17 @@ for e in range(0, config.NUM_EPOCHS):
         intensity_pred = torch.sigmoid(pred[2].squeeze())
         where = torch.Tensor(torch.where(intensity_pred > torch.Tensor([config.THRESHOLD]).to(device), 1, 0)).type(torch.uint8)
         metrics["intensity_acc"] = np.append(metrics["intensity_acc"], len(torch.where((where.squeeze() == y_intensity).cpu())[0]))
-    # calculate the average training and validation loss
-
-    # update our training history
+    
+   # calculate the average training loss and the accuracy
     metrics["mask_train_acc"] = np.append(metrics["mask_train_acc"], metrics["mask_acc"].mean().item())
     metrics["label_train_acc"] = np.append(metrics["label_train_acc"], metrics["label_acc"].sum().item() / (config.BATCH_SIZE * len(trainDataLoader)))
     metrics["intensity_train_acc"] = np.append(metrics["intensity_train_acc"], metrics["intensity_acc"].sum().item() / (config.BATCH_SIZE * len(trainDataLoader)))
 
-    '''
-    print('old mask loss: ', metrics["mask_loss"].sum().item() / (config.BATCH_SIZE * len(trainDataLoader)))
-    print('new loss: ', metrics["mask_loss"].mean().item())
-    print('mul: ', metrics["mask_loss"].sum().item() * 8 / (config.BATCH_SIZE * len(trainDataLoader)))
-    print()
-
-    print('old label loss: ', metrics["label_loss"].sum().item() /  (config.BATCH_SIZE * len(trainDataLoader)))
-    print('new loss: ', metrics["label_loss"].sum().item() /  len(trainDataLoader))
-    print('mul: ', metrics["label_loss"].sum().item() * 8/  (config.BATCH_SIZE * len(trainDataLoader)))
-    print()
-
-    print('old intensity loss: ',  metrics["intensity_loss"].sum().item() /  (config.BATCH_SIZE * len(trainDataLoader)))
-    print('new loss: ', metrics["intensity_loss"].sum().item() /  len(trainDataLoader))
-    print('mul: ', metrics["intensity_loss"].sum().item() * 8/  (config.BATCH_SIZE * len(trainDataLoader)))
-    print()
-    '''
     metrics["mask_train_loss"] = np.append(metrics["mask_train_loss"], metrics["mask_loss"].mean().item())
     metrics["label_train_loss"] = np.append(metrics["label_train_loss"], metrics["label_loss"].sum().item() /  len(trainDataLoader))
     metrics["intensity_train_loss"] = np.append(metrics["intensity_train_loss"],metrics["intensity_loss"].sum().item() / len(trainDataLoader))
 
-    # print the model training and validation information
+    # print the model training information
     print(f"[INFO {time.asctime(time.localtime(time.time()))}] ")
     print("[INFO] EPOCH: {}/{}".format(e + 1, config.NUM_EPOCHS))
     print("Mask loss: {:.6f}, Mask accuracy: {:.4f}".format(metrics["mask_train_loss"][-1],
