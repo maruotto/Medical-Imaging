@@ -1,6 +1,3 @@
-# USAGE
-# python3 predict.py
-
 # import the necessary packages
 from training import config
 import numpy as np
@@ -40,8 +37,9 @@ OUTPUT = args["path"]
 root_dir = config.IMAGE_DATASET_PATH
 csv_file = config.test_dataset_path(LETTER)
 
-intensity_labels=['intermediate', 'positive']
-label_labels=['homogeneous', 'speckled','nucleolar', 'centromere', 'golgi', 'numem', 'mitsp']
+intensity_labels = ['intermediate', 'positive']
+label_labels = ['homogeneous', 'speckled', 'nucleolar', 'centromere', 'golgi', 'numem', 'mitsp']
+
 
 def each_model(path, dir):
     print("[INFO] load up model " + dir + "...")
@@ -60,21 +58,30 @@ def each_model(path, dir):
 
             y_label += [y1.cpu().item(), ]
             preds_label += [preds[1].argmax(1).to(config.DEVICE).cpu().item(), ]
-            
+
             y_intensity += [y2.cpu().item(), ]
-            preds_intensity += [torch.where(torch.sigmoid(preds[2].squeeze()) > torch.Tensor([config.THRESHOLD]).to(config.DEVICE), 1,0).squeeze().cpu().item(), ]
+            preds_intensity += [
+                torch.where(torch.sigmoid(preds[2].squeeze()) > torch.Tensor([config.THRESHOLD]).to(config.DEVICE), 1,
+                            0).squeeze().cpu().item(), ]
     label_confusion = confusion_matrix(preds_label, y_label)
     intensity_confusion = confusion_matrix(preds_intensity, y_intensity)
     return label_confusion, intensity_confusion
 
 
-def create_pretty_confusion(confusion_matrix, intensity = True):
-        plt.figure()
-        sns.set()
-        heatmap = sns.heatmap(confusion_matrix, annot=True, fmt="d", xticklabels= intensity_labels if intensity else label_labels, yticklabels= intensity_labels if intensity else label_labels) 
-        # To save the heatmap as a file:
-        return heatmap.get_figure()
+def normalize_confusion(confusion_matrix):
+    den = confusion_matrix.sum(axis=0)
+    den = np.where(den==0, 1, den)
+    return np.round((confusion_matrix / den)*100).astype(np.int8)
 
+
+def create_pretty_confusion(confusion_matrix, intensity=True):
+    plt.figure()
+    sns.set()
+    heatmap = sns.heatmap(confusion_matrix, annot=True, fmt="d",
+                          xticklabels=intensity_labels if intensity else label_labels,
+                          yticklabels=intensity_labels if intensity else label_labels, cmap="YlOrBr")
+    # To save the heatmap as a file:
+    return heatmap.get_figure()
 
 
 if __name__ == '__main__':
@@ -84,14 +91,14 @@ if __name__ == '__main__':
     fig = plt.figure(1)
     plt.plot([0, 1], [0, 1], color='darkblue', linestyle=(0, (1, 10)))
     for dir in next(os.walk(config.BASE_OUTPUT))[1]:
-        if not (dir == 'tmp' or dir == 'Confusions'):
+        if not (dir == 'tmp' or dir == 'Confusions'or dir == 'Confusions Absolute' or dir == 'Rocs'):
             MODEL_PATH = os.path.join(config.BASE_OUTPUT, dir) + '/model' + LETTER
             label_confusion, intensity_confusion = each_model(MODEL_PATH, dir)
-            fig = create_pretty_confusion(list(label_confusion), False)
+            fig = create_pretty_confusion(list(normalize_confusion(label_confusion)), False)
             plt.tight_layout()
-            fig.savefig(os.path.join(config.BASE_OUTPUT, OUTPUT) + '/' + dir+ 'label_heatmap' + LETTER + '.pdf')
+            fig.savefig(os.path.join(config.BASE_OUTPUT, OUTPUT) + '/' + dir + 'label_heatmap' + LETTER + '.pdf')
             fig = None
-            fig = create_pretty_confusion(list(intensity_confusion), True)
+            fig = create_pretty_confusion(list(normalize_confusion(intensity_confusion)), True)
             fig.savefig(os.path.join(config.BASE_OUTPUT, OUTPUT) + '/' + dir + 'intensity_heatmap' + LETTER + '.pdf')
             print('model ' + dir + ' success')
 
