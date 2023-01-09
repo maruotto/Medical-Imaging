@@ -1,6 +1,3 @@
-# USAGE
-# python3 predict.py
-
 # import the necessary packages
 from training import config
 import numpy as np
