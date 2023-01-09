@@ -33,7 +33,7 @@ def plot_roc_curve(fpr, tpr, dir,auroc):
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("-l", "--letter", type=str, required=True, help="letter of the fold in capital case")
-ap.add_argument("-p", "--path", type=str, required=False, help="path to output trained model", default="output")
+ap.add_argument("-p", "--path", type=str, required=False, help="path to output trained model", default="Rocs")
 args = vars(ap.parse_args())
 
 # load the image and mask filepaths in a sorted manner
@@ -86,7 +86,7 @@ if __name__ == '__main__':
 	fig = plt.figure(1)
 	plt.plot([0, 1], [0, 1], color='darkblue', linestyle=(0, (1, 10)))
 	for dir in next(os.walk(config.BASE_OUTPUT))[1]:
-		if not (dir == 'tmp' or dir == 'Confusions'):
+		if not (dir == 'tmp' or dir == 'Confusions' or dir == 'Confusions Absolute' or dir == 'Rocs'):
 			MODEL_PATH = os.path.join(config.BASE_OUTPUT, dir) + '/model' + LETTER
 			each_model(MODEL_PATH, dir)
 			print('model ' + dir + ' success')
@@ -97,5 +97,8 @@ if __name__ == '__main__':
 	plt.title('Receiver Operating Characteristic (ROC) Curve')
 
 	fig.savefig(os.path.join(config.BASE_OUTPUT, OUTPUT) + '/roc'+LETTER+'.pdf')
+
+
+
 
 
