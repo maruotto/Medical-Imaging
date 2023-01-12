@@ -69,7 +69,8 @@ def each_model(path, dir):
 
 
 def normalize_confusion(confusion_matrix):
-    den = confusion_matrix.sum(axis=0)
+    den = confusion_matrix.sum(axis=1)
+    den = den.reshape(-1, 1)
     den = np.where(den==0, 1, den)
     return np.round((confusion_matrix / den)*100).astype(np.int8)
 
